@@ -1,3 +1,11 @@
+class ParameterError(Exception):
+	def __init__(self, param):
+		self.param = param
+
+	def __str__(self):
+		return 'invalid parameter: {}.'.format(self.param)
+
+
 class CurrencyError(Exception):
 	def __init__(self, currency):
 		self.currency = currency
