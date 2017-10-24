@@ -29,8 +29,8 @@ class Laplace:
 		self.delay = settings['delay']
 		self.log_distance = self.convert_distance(settings['log_distance'])
 
-		self.trace_days = settings['trace_days']
-		self.tracer = Tracer(master=self)
+		# self.trace_days = settings['trace_days']
+		# self.tracer = Tracer(master=self)
 
 		self.update()
 
