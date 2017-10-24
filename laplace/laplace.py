@@ -19,7 +19,7 @@ class Laplace:
 			with open(spath, 'r') as fp:
 				settings = json.loads(fp.read())
 				possible_keys = ('key','secret','currency','delay',\
-								'log_distance','trace_distance')
+								'log_distance','trace_days')
 
 				if set(possible_keys) != set(settings.keys()):
 					raise InvalidSettingsPathKeyError(possible_keys)
@@ -28,7 +28,8 @@ class Laplace:
 		self.currency = settings['currency']
 		self.delay = settings['delay']
 		self.log_distance = self.convert_distance(settings['log_distance'])
-		self.trace_distance = self.convert_distance(settings['trace_distance'])
+
+		self.trace_days = settings['trace_days']
 		self.tracer = Tracer(master=self)
 
 		self.update()
@@ -49,6 +50,11 @@ class Laplace:
 			elif response['status']=='5500' and '지원하지 않는 화폐' in response['message']:
 				raise ResponseError('5500','Invalid currency {}'.format(self.currency))
 
+			elif response['status']=='5600' and \
+								'매수금액이 사용가능 KRW 를 초과' in response['message']:
+				logging.critical(str(response))
+				sleep(1.5)
+				return False
 
 			elif response['status']!='0000':
 				logging.critical(str(response))
@@ -107,8 +113,14 @@ class Laplace:
 
 			if current_market_sell <= price:
 				units = self.confirm_units(units, direction='buy')
-				bid_call = self.call(path='/trade/market_buy',
-								params={'currency':self.currency, 'units':units})
+				while True:
+					bid_call = self.call(path='/trade/market_buy',
+									params={'currency':self.currency, 'units':units})
+					if bid_call == False:
+						units = self.confirm_units(units*0.9)
+						continue
+					break
+
 				logging.info("\n[BID CALL COMPLETE]\n"+\
 							"\tprice: {:,}\n".format(float(bid_call[0]['price']))+\
 							"\tfee: {:,})\n".format(float(bid_call[0]['fee']))+\
@@ -141,14 +153,20 @@ class Laplace:
 			current_market_buy = self.get_market_buy()
 
 			if current_market_buy >= self.confirm_units(price):
-				units = self.confirm_units(units, direction='sell')
-				bid_call = self.call(path='/trade/market_buy',
-								params={'currency':self.currency, 'units':units})
-				logging.info("\n[ASK CALL COMPLETE]\n"+\
-							"\tprice: {:,}\n".format(float(ask_call[0]['price']))+\
-							"\tfee: {:,})\n".format(float(ask_call[0]['fee']))+\
-							"\tunits: {:,}\n".format(float(ask_call[0]['units']))
-							)
+				while True:
+					# prevent temporary error crashdown
+					units = self.confirm_units(units, direction='sell')
+					ask_call = self.call(path='/trade/market_sell',
+									params={'currency':self.currency, 'units':units})
+					if ask_call == False:
+						continue
+
+					logging.info("\n[ASK CALL COMPLETE]\n"+\
+								"\tprice: {:,}\n".format(float(ask_call[0]['price']))+\
+								"\tfee: {:,})\n".format(float(ask_call[0]['fee']))+\
+								"\tunits: {:,}\n".format(float(ask_call[0]['units']))
+								)
+					break
 				self.update()
 				success_callback()
 				return

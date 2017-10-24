@@ -29,3 +29,10 @@ class UnitsError(Exception):
 
 	def __str__(self):
 		return "[direction:{}] {}".format(self.direction, self.units)
+
+class TraceDaysError(Exception):
+	def __init__(self):
+		pass
+
+	def __str__(self):
+		return "trace_days should be an integer (>= 1)."
