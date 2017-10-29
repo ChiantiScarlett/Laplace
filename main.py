@@ -1,12 +1,20 @@
-from laplace import Laplace
+from modules.core import Laplace
 
-def main():
-	SETTINGS_PATH = './settings.json'
-	
-	lp = Laplace(spath=SETTINGS_PATH)
+SETTINGS = {
+	"key": "",
+	"secret": "",
+	"currency": "BTC",
+	"delay":1.5,
+	"log_distance": 600,
+	"trace_days": 2
+	}
+
+def main():	
+	lp = Laplace(**SETTINGS)
 	# lp.buy_when(price='6,570,000', units='*')
 	# lp.sell_when(price='6,700,000', units='*')
-	lp.log()
+	# lp.log()
+
 
 if __name__ == "__main__":
 	main()

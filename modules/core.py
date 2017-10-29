@@ -1,12 +1,29 @@
-# Code Reference :: Bithumb API Python Sample Code
-# @author	btckorea @date	2017-04-12
-import sys, time, math, base64, hmac, hashlib, urllib.parse, pycurl, json
+class Laplace:
+	# caller
+	def __init__(self, **kwargs):
 
+		self.core = XCoinAPI(kwargs['key'], kwargs['secret'])
+		self.unit = 0
+		self.krw = 0
+
+		self.update()
+
+
+	def call(self, path, rgParams={}):
+		response = self.core.xcoinApiCall(path, rgParams)
+		return response
+
+
+	def update(self):
+		response = self.call(path='/info/balance')
+		print(response)
+
+
+
+import sys, time, math, base64, hmac, hashlib, urllib.parse, pycurl, json
 
 class XCoinAPI:
 	api_url = "https://api.bithumb.com";
-	api_key = "";
-	api_secret = "";
 
 	def __init__(self, api_key, api_secret):
 		self.api_key = api_key;
@@ -27,6 +44,12 @@ class XCoinAPI:
 		return mt_array[1] + mt_array[0][2:5];
 
 	def xcoinApiCall(self, endpoint, rgParams):
+		# 1. Api-Sign and Api-Nonce information generation.
+		# 2. Request related information from the Bithumb API server.
+		#
+		# - nonce: it is an arbitrary number that may only be used once.
+		# - api_sign: API signature information created in various combinations values.
+
 		endpoint_item_array = {
 			"endpoint" : endpoint
 		};
@@ -53,6 +76,7 @@ class XCoinAPI:
 
 		curl_handle = pycurl.Curl();
 		curl_handle.setopt(pycurl.POST, 1);
+		#curl_handle.setopt(pycurl.VERBOSE, 1); # vervose mode :: 1 => True, 0 => False
 		curl_handle.setopt(pycurl.POSTFIELDS, str_data);
 
 		url = self.api_url + endpoint;
@@ -61,6 +85,8 @@ class XCoinAPI:
 		curl_handle.setopt(curl_handle.WRITEFUNCTION, self.body_callback);
 		curl_handle.perform();
 
+		#response_code = curl_handle.getinfo(pycurl.RESPONSE_CODE); # Get http response status code.
+
 		curl_handle.close();
-		
-		return (json.loads(self.contents.decode('utf-8')));
+
+		return (json.loads(self.contents));
